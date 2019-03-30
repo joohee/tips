@@ -1,0 +1,4 @@
+- pipeline.id: webserver
+  path.config: "/etc/logstash/conf.d/filebeat-webserver.conf"
+  pipeline.workers: 1
+
