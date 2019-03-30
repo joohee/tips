@@ -1,0 +1,48 @@
+input {
+      beats {
+        port => "5050"
+        client_inactivity_timeout => "3600"
+      }
+}
+filter {
+      grok {
+        match => {
+            "message" => "(?m)%{TIMESTAMP_ISO8601:timestamp}%{SPACE}%{LOGLEVEL:logLevel}%{SPACE}%{USERNAME:thread}%{SPACE}%{NOTSPACE:class}%{SPACE}%{NUMBER:line} \- %{GREEDYDATA:content}"
+        }
+        add_field => {
+            "code" => "%{class}:%{line}"
+        }
+      }
+
+    if "_grokparsefailure" in [tags] {
+        grok {
+            match => {
+              "message" => "(?m)%{TIMESTAMP_ISO8601:timestamp}%{SPACE}%{LOGLEVEL:logLevel}%{SPACE}%{USERNAME:thread}%{SPACE}%{NOTSPACE:class}%{SPACE}%{NUMBER:line} \- (?<message>(.|\r|\n)*)"
+            }
+            add_field => {
+                "code" => "%{class}:%{line}"
+            }
+        }
+      }
+
+    if ![line] {
+            mutate { add_field => { "line" => "0" } }
+    }
+
+    date {
+        match => [
+            "timestamp" , "yyyy-MM-dd HH:mm:ss.SSS"
+        ]
+        target => "@timestamp"
+    }
+}
+
+output {
+      #stdout { codec => rubydebug }
+      elasticsearch {
+        hosts => "ip:port"
+        index => "%{[@metadata][beat]}-%{[@metadata][version]}-%{[fields][index_name]}-%{+YYYY.MM.dd}"
+        document_id => "%{@timestamp}-%{line}"
+      }
+}
+

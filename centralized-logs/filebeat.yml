@@ -1,0 +1,23 @@
+filebeat.inputs:
+- type: log
+  enabled: true
+
+  paths:
+    - /var/log/web/server.*
+  level: info
+  multiline.pattern: '^[0-9]{4}-[0-9]{2}-[0-9]{2}'		# 2019-03-30
+  multiline.negate: true					 
+  multiline.match: after
+
+  close_inactive: 15m
+  ignore_older: 20m
+  #clean_inactive: 5m
+
+  fields:
+      index_name: server-log
+
+output.logstash:
+   hosts: ["ip:port"]
+
+logging.level: info
+
